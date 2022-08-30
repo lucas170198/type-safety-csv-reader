@@ -173,6 +173,7 @@ getCsvColumn = do
         Nothing -> putStrLn "Error on decode"
         Just v ->  print (show (getColumnByIndex cidx0 v))
 
+-- | Try to uncomment it, we will se that doenst compile (safe csv table doent allow forbide columns)
 -- getCsvColumnWrong :: IO()
 -- getCsvColumnWrong = do
 --     csvData <- BL.readFile "test.csv"
