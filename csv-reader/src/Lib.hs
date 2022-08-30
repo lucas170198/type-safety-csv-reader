@@ -6,12 +6,15 @@
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE LambdaCase #-}
+
 {-# LANGUAGE FlexibleInstances #-}
 {-# OPTIONS_GHC -Wno-unticked-promoted-constructors #-}
 
 module Lib
     ( 
-    -- somefunc
+
     ) where
 
 import qualified Data.ByteString.Lazy as BL
@@ -45,13 +48,13 @@ deriving instance Show (FileType opt)
 deriving instance Eq (FileType opt)
 
 -- | Abstraction of ByteString, to deal with Strings on the logic
--- class Container a where
---     type Elem a
---     elements :: a -> [Elem a]
+class Container a where
+    type Elem a
+    elements :: a -> [Elem a]
 
--- instance Container BL.ByteString where
---     type Elem BL.ByteString = Char
---     elements a = fmap w2c (BL.unpack a)
+instance Container BL.ByteString where
+    type Elem BL.ByteString = Char
+    elements a = fmap w2c (BL.unpack a)
 
 
 -- | Safe access to Rows and columns
@@ -64,6 +67,25 @@ data Vector n a where
     (:>) :: a -> Vector n a -> Vector ('S n) a
 infixr 5 :>
 deriving instance Show a => Show (Vector n a)
+
+type (+) :: Nat -> Nat -> Nat
+type family m + n where
+    Z + n = n
+    (S m) + n = S (m + n)
+
+type SNat :: Nat -> Type
+data SNat n where
+  SZ :: SNat Z
+  SS :: SNat n -> SNat (S n)
+deriving instance Show (SNat n)
+
+(++) :: Vector n a -> Vector m a -> Vector (n + m) a
+VNil ++ v = v
+(x :> xs) ++ v = x :> (xs Lib.++ v)
+
+--- >>> ("5" :> VNil) Lib.++ ("1" :> VNil)
+--- "5" :> ("1" :> VNil)
+---
 
 -- | Finity GADT's. Used to generate possible valid index
 data Fin :: Nat -> Type where
@@ -100,14 +122,24 @@ getHeaders (NameIndexed h _) = h
 --- >>> v = NameIndexed ("Nome" :> "Idade" :> VNil) (("Lucas" :> "24" :> VNil) :> ("Geo" :> "23" :> VNil) :> VNil)
 --- >>> getColumnByIndex (FinS (FinS FinZ)) v
 
--- strToMatriz :: [[String]] -> Vector n (Vector m String)
--- strToMatriz = undefined
+strToMatriz :: [[String]] -> Vector n (Vector m String)
+strToMatriz = undefined
 
+strToVector :: [String] -> Vector c String
+strToVector = undefined
+
+
+toList :: Vector n a -> [a]
+toList VNil    = []
+toList (x :> xs) = x : toList xs
+
+
+-- | TODO: Implement a way to convert a vector to a sizedVector
 decode :: FileType indexT -> BL.ByteString -> Maybe (CSVFile indexT lin col)
 decode Header s = case splitLinesAdapter ',' s of
-    (header : xs) -> Just $ NameIndexed header (strToMatriz xs)
+    (header : xs) -> Just $ NameIndexed (strToVector header) (strToMatriz xs)
     _ -> Nothing
-decode NoHeader s = Just $ NumberIndexed $ strToMatriz $ splitLinesAdapter ',' s
+decode NoHeader s = Just $ NumberIndexed $ strToMatriz (splitLinesAdapter ',' s)
 
 -- somefunc :: IO ()
 -- somefunc = do
