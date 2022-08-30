@@ -1,4 +1,4 @@
-# Changelog for `csv-reader`
+# Changelog for `type-safety-csv`
 
 All notable changes to this project will be documented in this file.
 

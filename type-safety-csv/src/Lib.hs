@@ -7,26 +7,18 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE DerivingStrategies #-}
+
 {-# LANGUAGE LambdaCase #-}
 
 {-# LANGUAGE FlexibleInstances #-}
 {-# OPTIONS_GHC -Wno-unticked-promoted-constructors #-}
 
-module Lib
-    ( 
-
-    ) where
+module Lib where
 
 import qualified Data.ByteString.Lazy as BL
-import Data.ByteString.Internal (w2c)
+import Data.ByteString.Internal (w2c, c2w)
 import Data.Kind
-
-
--- | Some Helpers functions
-split :: Char -> String -> [String]
-split _ "" = [""]
-split delim (x : xs) | x == delim = "" : (split delim xs)
-                     | otherwise  = (x : head (split delim xs)) : tail (split delim xs)
 
 -- | Using GADT's to choose the encode mode (name indexed or number indexed).
 
@@ -39,6 +31,7 @@ data CSVFile mode cols lin where
     NameIndexed :: Vector cols String -> Vector lin (Vector cols String) -> CSVFile Name cols lin
     NumberIndexed :: Vector lin (Vector cols String) -> CSVFile Index cols lin
 deriving instance Show (CSVFile m c l)
+deriving instance Eq (CSVFile m c l)
 
 -- | User indicates which type of compression mode we want
 data FileType opt where
@@ -60,6 +53,7 @@ instance Container BL.ByteString where
 -- | Safe access to Rows and columns
 data Nat = Z | S Nat
     deriving Eq
+    deriving Show
 
 type Vector :: Nat -> Type -> Type
 data Vector n a where
@@ -67,6 +61,12 @@ data Vector n a where
     (:>) :: a -> Vector n a -> Vector ('S n) a
 infixr 5 :>
 deriving instance Show a => Show (Vector n a)
+deriving instance Eq a => Eq (Vector n a)
+
+type ExVector :: Type -> Type
+data ExVector a where
+    MkExVector :: Vector n a -> ExVector a
+deriving instance Show a => Show (ExVector a)
 
 type (+) :: Nat -> Nat -> Nat
 type family m + n where
@@ -83,14 +83,11 @@ deriving instance Show (SNat n)
 VNil ++ v = v
 (x :> xs) ++ v = x :> (xs Lib.++ v)
 
---- >>> ("5" :> VNil) Lib.++ ("1" :> VNil)
---- "5" :> ("1" :> VNil)
----
-
 -- | Finity GADT's. Used to generate possible valid index
 data Fin :: Nat -> Type where
     FinZ :: Fin ('S n) -- 0th index to Vec n non-enpty
-    FinS :: Fin n -> Fin ('S n)
+    FinS :: Fin n 
+          -> Fin ('S n)
 deriving instance Show (Fin n)
 
 mapSafeVec :: (a -> b) -> Vector n a -> Vector n b
@@ -101,6 +98,22 @@ index :: Fin n -> Vector n a -> a
 index FinZ (x :> _) = x
 index (FinS idx) (_ :>  xs) = index idx xs
 
+-- | Some Helpers functions
+split :: Char -> String -> [String]
+split _ "" = [""]
+split delim (x : xs) | x == delim = "" : (split delim xs)
+                     | otherwise  = (x : head (split delim xs)) : tail (split delim xs)
+
+toList :: Vector n a -> [a]
+toList VNil    = []
+toList (x :> xs) = x : toList xs
+
+toVector :: SNat n -> [a] -> Vector n a
+toVector SZ [] = VNil
+toVector (SS n) (x : xs) =  x :> (toVector n xs)
+toVector (SS _) [] = undefined --- Never should happend if you pass nat equals to string size 
+toVector SZ (_:_) = undefined --- Never should happend if you pass nat equals to string size
+                     
 --- | Converts ByteString to internal expected model
 splitLinesAdapter :: Char -> BL.ByteString -> [[String]]
 splitLinesAdapter delim s = split delim <$> (lines . elements) s
@@ -119,34 +132,51 @@ getRow i (NumberIndexed r) = index i r
 getHeaders :: CSVFile Name c l -> Vector c String
 getHeaders (NameIndexed h _) = h
 
---- >>> v = NameIndexed ("Nome" :> "Idade" :> VNil) (("Lucas" :> "24" :> VNil) :> ("Geo" :> "23" :> VNil) :> VNil)
---- >>> getColumnByIndex (FinS (FinS FinZ)) v
-
-strToMatriz :: [[String]] -> Vector n (Vector m String)
-strToMatriz = undefined
-
-strToVector :: [String] -> Vector c String
-strToVector = undefined
-
-
-toList :: Vector n a -> [a]
-toList VNil    = []
-toList (x :> xs) = x : toList xs
-
-
--- | TODO: Implement a way to convert a vector to a sizedVector
-decode :: FileType indexT -> BL.ByteString -> Maybe (CSVFile indexT lin col)
-decode Header s = case splitLinesAdapter ',' s of
-    (header : xs) -> Just $ NameIndexed (strToVector header) (strToMatriz xs)
+-- | TODO: Get of the csv file to automatich identify that
+decode :: FileType indexT -> SNat col -> SNat lin -> BL.ByteString -> Maybe (CSVFile indexT col lin)
+decode Header col lin s = case splitLinesAdapter ',' s of
+    (header : xs) -> Just $ NameIndexed (toVector col header) (mapSafeVec (\x -> toVector col x) (toVector lin xs))
     _ -> Nothing
-decode NoHeader s = Just $ NumberIndexed $ strToMatriz (splitLinesAdapter ',' s)
+decode NoHeader col lin s = Just $ NumberIndexed $ (mapSafeVec (\x -> toVector col x) (toVector lin unpakced))
+    where unpakced = (splitLinesAdapter ',' s)
 
--- somefunc :: IO ()
--- somefunc = do
+--- | This is necessary because I can't generate a SNat from an int :(
+sNat2 = (SS (SS SZ))
+sNat3 = (SS (SS (SS SZ)))
+
+cidx0 = FinZ
+cidx1 = FinS FinZ
+cidx2 = FinS (FinS FinZ)
+cidx3 = FinS (FinS (FinS FinZ))
+cidx4 = FinS (FinS (FinS (FinS FinZ)))
+
+
+--- | Example usage functions
+loadingCSVToType :: IO()
+loadingCSVToType = do
+    csvData <- BL.readFile "test.csv"
+    case decode Header sNat2 sNat3 csvData  of
+        Nothing -> putStrLn "Error on decode"
+        Just v -> print v
+
+getCsvHeaders :: IO()
+getCsvHeaders = do
+    csvData <- BL.readFile "test.csv"
+    case decode Header sNat2 sNat3 csvData  of
+        Nothing -> putStrLn "Error on decode"
+        Just v ->  print (show (getHeaders v))
+
+getCsvColumn :: IO()
+getCsvColumn = do
+    csvData <- BL.readFile "test.csv"
+    case decode Header sNat2 sNat3 csvData  of
+        Nothing -> putStrLn "Error on decode"
+        Just v ->  print (show (getColumnByIndex cidx0 v))
+
+-- getCsvColumnWrong :: IO()
+-- getCsvColumnWrong = do
 --     csvData <- BL.readFile "test.csv"
---     case decode Header csvData of
+--     case decode Header sNat2 sNat3 csvData  of
 --         Nothing -> putStrLn "Error on decode"
---         Just v -> print v
-
-
+--         Just v ->  print (show (getColumnByIndex cidx2 v))
 

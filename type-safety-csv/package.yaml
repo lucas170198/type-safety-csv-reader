@@ -1,6 +1,6 @@
-name:                csv-reader
+name:                type-safety-csv
 version:             0.1.0.0
-github:              "githubuser/csv-reader"
+github:              "githubuser/type-safety-csv"
 license:             BSD3
 author:              "Author name here"
 maintainer:          "example@example.com"
@@ -17,12 +17,12 @@ extra-source-files:
 # To avoid duplicated efforts in documentation and dealing with the
 # complications of embedding Haddock markup inside cabal files, it is
 # common to point users to the README.md file.
-description:         Please see the README on GitHub at <https://github.com/githubuser/csv-reader#readme>
+description:         Please see the README on GitHub at <https://github.com/githubuser/type-safety-csv#readme>
 
 dependencies:
 - base >= 4.7 && < 5
 - bytestring
-
+- utf8-string
 
 ghc-options:
 - -Wall
@@ -39,7 +39,7 @@ library:
   source-dirs: src
 
 executables:
-  csv-reader-exe:
+  type-safety-csv-exe:
     main:                Main.hs
     source-dirs:         app
     ghc-options:
@@ -47,10 +47,10 @@ executables:
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:
-    - csv-reader
+    - type-safety-csv
 
 tests:
-  csv-reader-test:
+  type-safety-csv-test:
     main:                Spec.hs
     source-dirs:         test
     ghc-options:
@@ -58,4 +58,6 @@ tests:
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:
-    - csv-reader
+    - type-safety-csv
+    - tasty
+    - tasty-hunit

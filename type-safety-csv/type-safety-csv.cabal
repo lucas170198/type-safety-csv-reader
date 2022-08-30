@@ -4,11 +4,11 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 
-name:           csv-reader
+name:           type-safety-csv
 version:        0.1.0.0
-description:    Please see the README on GitHub at <https://github.com/githubuser/csv-reader#readme>
-homepage:       https://github.com/githubuser/csv-reader#readme
-bug-reports:    https://github.com/githubuser/csv-reader/issues
+description:    Please see the README on GitHub at <https://github.com/githubuser/type-safety-csv#readme>
+homepage:       https://github.com/githubuser/type-safety-csv#readme
+bug-reports:    https://github.com/githubuser/type-safety-csv/issues
 author:         Author name here
 maintainer:     example@example.com
 copyright:      2022 Author name here
@@ -21,50 +21,49 @@ extra-source-files:
 
 source-repository head
   type: git
-  location: https://github.com/githubuser/csv-reader
+  location: https://github.com/githubuser/type-safety-csv
 
 library
   exposed-modules:
       Lib
   other-modules:
-      Paths_csv_reader
+      Paths_type_safety_csv
   hs-source-dirs:
       src
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints
   build-depends:
       base >=4.7 && <5
     , bytestring
-    , deepseq
-    , finite-typelits
+    , utf8-string
   default-language: Haskell2010
 
-executable csv-reader-exe
+executable type-safety-csv-exe
   main-is: Main.hs
   other-modules:
-      Paths_csv_reader
+      Paths_type_safety_csv
   hs-source-dirs:
       app
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.7 && <5
     , bytestring
-    , csv-reader
-    , deepseq
-    , finite-typelits
+    , type-safety-csv
+    , utf8-string
   default-language: Haskell2010
 
-test-suite csv-reader-test
+test-suite type-safety-csv-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
-      Paths_csv_reader
+      Paths_type_safety_csv
   hs-source-dirs:
       test
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.7 && <5
     , bytestring
-    , csv-reader
-    , deepseq
-    , finite-typelits
+    , tasty
+    , tasty-hunit
+    , type-safety-csv
+    , utf8-string
   default-language: Haskell2010
