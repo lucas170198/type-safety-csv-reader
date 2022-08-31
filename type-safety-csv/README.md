@@ -1,6 +1,7 @@
 ## Decodificação e manipulação de arquivos CSV utilizando programação a nível de tipos
 **Nome**: Lucas Silva Amorim
 **RA**: 11201720968
+**Video**: [Apresentação Youtbe](https://youtu.be/PQgmxBs5mpo)
  
 `type-safety-csv` é uma biblioteca para leitura e manipulação de csv 's, implementando métodos que garantem a segurança da API via tipagem.
 Desta forma, o desenvolvedor não precisa se preocupar com erros em tempo de execução ao lidar com um arquivo csv (seja por tentar acessar uma coluna inexistente, ou receber uma registro com um tamanho inesperado).
