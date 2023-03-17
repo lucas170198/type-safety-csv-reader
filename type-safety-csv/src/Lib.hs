@@ -174,10 +174,16 @@ getCsvColumn = do
         Just v ->  print (show (getColumnByIndex cidx0 v))
 
 -- | Try to uncomment it, we will se that doenst compile (safe csv table doent allow forbide columns)
--- getCsvColumnWrong :: IO()
--- getCsvColumnWrong = do
---     csvData <- BL.readFile "test.csv"
---     case decode Header sNat2 sNat3 csvData  of
---         Nothing -> putStrLn "Error on decode"
---         Just v ->  print (show (getColumnByIndex cidx2 v))
+getCsvColumnWrong :: IO()
+getCsvColumnWrong = do
+    csvData <- BL.readFile "test.csv"
+    case decode Header sNat2 sNat3 csvData  of
+        Nothing -> putStrLn "Error on decode"
+        Just v ->  print (show (getColumnByIndex cidx2 v))
+
+
+-- | Referencias
+--- https://blog.jle.im/entry/fixed-length-vector-types-in-haskell.html
+--- https://www.parsonsmatt.org/2017/04/26/basic_type_level_programming_in_haskell.html
+--- https://haskell.pesquisa.ufabc.edu.br/desenvolvimento-orientado-a-tipos/06.typefamily/
 
